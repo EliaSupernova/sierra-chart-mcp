@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-tests:
+    name: Node tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm --prefix server ci
+      - run: npm --prefix server test
+      - run: npm --prefix launcher test
+
+  bridge-core:
+    name: Portable bridge-core test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aminya/setup-cpp@v1
+        with:
+          compiler: true
+      - name: Install Windows build tools
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            make
+      - run: make bridge-core-test
+        shell: bash
+
+  privacy-scan:
+    name: Secret and privacy scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan tracked text for secrets and machine-specific paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mac_user_path='/''Users''/'
+          linux_user_path='/''home''/'
+          windows_user_path='[A-Za-z]:'
+          windows_user_path="${windows_user_path}"'\\Users\\'
+          sensitive_paths="${mac_user_path}|${linux_user_path}|${windows_user_path}"
+          fixture_dir=$(mktemp -d)
+          trap 'rm -rf "$fixture_dir"' EXIT
+          printf '%s\n' 'mac /''Users''/example' > "$fixture_dir/mac.txt"
+          printf '%s\n' 'linux /''home''/example' > "$fixture_dir/linux.txt"
+          printf '%s\n' 'windows C:'"\\Users\\"'example' > "$fixture_dir/windows.txt"
+          rg -q -i -e "$sensitive_paths" "$fixture_dir/mac.txt"
+          rg -q -i -e "$sensitive_paths" "$fixture_dir/linux.txt"
+          rg -q -i -e "$sensitive_paths" "$fixture_dir/windows.txt"
+          echo 'sensitive_path_fixture_scan: PASS'
+          files=$(git ls-files | rg -v '(^|/)(node_modules|dist|coverage|bin|build)(/|$)|\.(dll|exe|pdb)$' || true)
+          test -n "$files"
+          if printf '%s\n' "$files" | xargs rg -n -I -i -- "\\b(AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]+)\\b|${sensitive_paths}|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY"; then
+            echo 'Potential secret or personal path found' >&2
+            exit 1
+          fi
+      - name: Reject tracked Sierra/private artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | rg -n -i '(^|/)(Data|SierraMCP)(/|$)|(^|/)(Sierra4|Accounts4)\.config$|(^|/)Username\.txt$|\.(cht|scid|dly|config)$'; then
+            echo 'Sensitive Sierra/private artifact is tracked' >&2
+            exit 1
+          fi

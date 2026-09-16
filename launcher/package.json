@@ -1,0 +1,8 @@
+{
+  "name": "sierra-mcp-launcher",
+  "version": "2.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": { "test": "node --test" },
+  "bin": { "sierra-mcp-launcher": "cli.js" }
+}

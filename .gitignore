@@ -1,0 +1,27 @@
+node_modules/
+server/dist/
+server/coverage/
+launcher/coverage/
+bin/
+build/
+*.dll
+*.exe
+*.pdb
+*.dSYM/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.env
+!.env.example
+
+# Sierra/private artifacts (never check these in).
+*.cht
+*.scid
+*.dly
+Sierra4.config
+Accounts4.config
+Username.txt
+Data/
+SierraMCP/
+*.config

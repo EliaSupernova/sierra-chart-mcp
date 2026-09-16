@@ -1,0 +1,19 @@
+{
+  "name": "sierra-chart-mcp",
+  "version": "1.0.0",
+  "description": "Local, configuration-only MCP bridge for Sierra Chart.",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EliaSupernova/sierra-chart-mcp.git"
+  },
+  "scripts": {
+    "test": "npm run test:server && npm run test:launcher",
+    "test:server": "npm --prefix server ci && npm --prefix server test",
+    "test:launcher": "npm --prefix launcher test",
+    "test:bridge-core": "make bridge-core-test",
+    "check": "npm test && npm run test:bridge-core"
+  },
+  "engines": { "node": ">=20" }
+}

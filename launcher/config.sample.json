@@ -1,0 +1,12 @@
+{
+  "platform": "auto",
+  "sierraProcessNames": ["SierraChart_64.exe", "SierraChart.exe"],
+  "queueDirectories": ["inbox", "outbox", "processing", "archive", "state"],
+  "bridgeHeartbeatFiles": ["state/bridge-heartbeat"],
+  "heartbeatMaxAgeSeconds": 30,
+  "dataFolder": "<SIERRA_DATA_FOLDER>",
+  "scidMaxAgeSeconds": 300,
+  "minFreeBytes": 1073741824,
+  "sierraExecutable": "<SIERRA_EXECUTABLE>",
+  "wineCommand": "wine"
+}
